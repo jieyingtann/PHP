@@ -1,0 +1,80 @@
+<?php
+require '../config.php';
+session_start();
+
+if ($_SESSION['role'] != 'admin') {
+    die("Access denied");
+}
+
+$order_id = $_GET['id'];
+
+// Update status
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $status = $_POST['status'];
+
+    $stmt = $pdo->prepare("
+    UPDATE orders SET status = ? WHERE order_id = ?
+    ");
+    $stmt->execute([$status, $order_id]);
+
+    header("Location: admin_order_detail.php?id=$order_id");
+    exit;
+}
+
+// Get order
+$stmt = $pdo->prepare("
+SELECT o.*, m.username
+FROM orders o
+JOIN member m ON o.member_id = m.member_id
+WHERE o.order_id = ?
+");
+$stmt->execute([$order_id]);
+$order = $stmt->fetch();
+
+// Get items
+$stmt = $pdo->prepare("
+SELECT oi.*, p.product_name
+FROM order_item oi
+JOIN product p ON oi.product_id = p.product_id
+WHERE oi.order_id = ?
+");
+$stmt->execute([$order_id]);
+$items = $stmt->fetchAll();
+?>
+
+<h2>Order Detail (Admin)</h2>
+
+<p><strong>Order ID:</strong> <?= $order['order_id'] ?></p>
+<p><strong>User:</strong> <?= $order['username'] ?></p>
+<p><strong>Total:</strong> RM <?= $order['total_amount'] ?></p>
+
+<form method="POST">
+    <label>Status:</label>
+    <select name="status">
+        <option value="pending">Pending</option>
+        <option value="paid">Paid</option>
+        <option value="processing">Processing</option>
+        <option value="shipped">Shipped</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+    </select>
+    <button type="submit">Update</button>
+</form>
+
+<table border="1">
+<tr>
+    <th>Product</th>
+    <th>Qty</th>
+    <th>Price</th>
+    <th>Subtotal</th>
+</tr>
+
+<?php foreach ($items as $item): ?>
+<tr>
+    <td><?= $item['product_name'] ?></td>
+    <td><?= $item['quantity'] ?></td>
+    <td><?= $item['price'] ?></td>
+    <td><?= $item['price'] * $item['quantity'] ?></td>
+</tr>
+<?php endforeach; ?>
+</table>
