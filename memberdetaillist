@@ -1,0 +1,52 @@
+<?php
+require '../config.php';
+session_start();
+
+$order_id = $_GET['id'];
+$member_id = $_SESSION['member_id'];
+
+// Security check
+$stmt = $pdo->prepare("
+SELECT * FROM orders WHERE order_id = ? AND member_id = ?
+");
+$stmt->execute([$order_id, $member_id]);
+$order = $stmt->fetch();
+
+if (!$order) {
+    die("Unauthorized access");
+}
+
+// Get items
+$stmt = $pdo->prepare("
+SELECT oi.*, p.product_name
+FROM order_item oi
+JOIN product p ON oi.product_id = p.product_id
+WHERE oi.order_id = ?
+");
+$stmt->execute([$order_id]);
+$items = $stmt->fetchAll();
+?>
+
+<h2>Order Detail</h2>
+
+<p><strong>Order ID:</strong> <?= $order['order_id'] ?></p>
+<p><strong>Status:</strong> <?= $order['status'] ?></p>
+<p><strong>Total:</strong> RM <?= $order['total_amount'] ?></p>
+
+<table border="1">
+<tr>
+    <th>Product</th>
+    <th>Qty</th>
+    <th>Price</th>
+    <th>Subtotal</th>
+</tr>
+
+<?php foreach ($items as $item): ?>
+<tr>
+    <td><?= $item['product_name'] ?></td>
+    <td><?= $item['quantity'] ?></td>
+    <td><?= $item['price'] ?></td>
+    <td><?= $item['price'] * $item['quantity'] ?></td>
+</tr>
+<?php endforeach; ?>
+</table>
