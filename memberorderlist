@@ -1,0 +1,38 @@
+<?php
+require '../config.php'; // PDO connection
+session_start();
+
+$member_id = $_SESSION['member_id'];
+
+$stmt = $pdo->prepare("
+SELECT * FROM orders
+WHERE member_id = ?
+ORDER BY created_at DESC
+");
+$stmt->execute([$member_id]);
+$orders = $stmt->fetchAll();
+?>
+
+<h2>My Orders</h2>
+
+<table border="1">
+<tr>
+    <th>Order ID</th>
+    <th>Total</th>
+    <th>Status</th>
+    <th>Date</th>
+    <th>Action</th>
+</tr>
+
+<?php foreach ($orders as $o): ?>
+<tr>
+    <td><?= $o['order_id'] ?></td>
+    <td>RM <?= $o['total_amount'] ?></td>
+    <td><?= $o['status'] ?></td>
+    <td><?= $o['created_at'] ?></td>
+    <td>
+        <a href="member_order_detail.php?id=<?= $o['order_id'] ?>">View</a>
+    </td>
+</tr>
+<?php endforeach; ?>
+</table>
