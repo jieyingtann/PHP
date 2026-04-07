@@ -1,0 +1,54 @@
+<?php
+require '../config.php';
+session_start();
+
+// Only admin
+if ($_SESSION['role'] != 'admin') {
+    die("Access denied");
+}
+
+// Search (optional)
+$search = $_GET['search'] ?? '';
+
+$stmt = $pdo->prepare("
+SELECT o.*, m.username
+FROM orders o
+JOIN member m ON o.member_id = m.member_id
+WHERE o.order_id LIKE ? OR m.username LIKE ?
+ORDER BY created_at DESC
+");
+
+$stmt->execute(["%$search%", "%$search%"]);
+$orders = $stmt->fetchAll();
+?>
+
+<h2>All Orders</h2>
+
+<form method="GET">
+    <input type="text" name="search" placeholder="Search order / user">
+    <button type="submit">Search</button>
+</form>
+
+<table border="1">
+<tr>
+    <th>Order ID</th>
+    <th>User</th>
+    <th>Total</th>
+    <th>Status</th>
+    <th>Date</th>
+    <th>Action</th>
+</tr>
+
+<?php foreach ($orders as $o): ?>
+<tr>
+    <td><?= $o['order_id'] ?></td>
+    <td><?= $o['username'] ?></td>
+    <td>RM <?= $o['total_amount'] ?></td>
+    <td><?= $o['status'] ?></td>
+    <td><?= $o['created_at'] ?></td>
+    <td>
+        <a href="admin_order_detail.php?id=<?= $o['order_id'] ?>">View</a>
+    </td>
+</tr>
+<?php endforeach; ?>
+</table>
